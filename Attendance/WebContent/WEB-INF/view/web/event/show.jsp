@@ -53,11 +53,11 @@
 								</div>
 								<div class="row">
 									<div class="${bootStyle_2Column_A}">Yes link:</div>
-									<div class="${bootStyle_2Column_B}">${app.url}/confirm/event/${event.urlEncodedName}?guest=${person.urlEncodedEmail}&answer=${event.encrypt('yes')}</div>
+									<div class="${bootStyle_2Column_B}">${app.url}/confirm/event/${event.urlEncodedName}?guest=${person.urlEncodedEmail}&answer=${event.encryptUrl('yes')}&eventId=${event.encryptUrl(event.id)}</div>
 								</div>
 								<div class="row">
 									<div class="${bootStyle_2Column_A}">No link:</div>
-									<div class="${bootStyle_2Column_B}">${app.url}/confirm/event/${event.urlEncodedName}?guest=${person.urlEncodedEmail}&answer=${event.encrypt('no')}</div>
+									<div class="${bootStyle_2Column_B}">${app.url}/confirm/event/${event.urlEncodedName}?guest=${person.urlEncodedEmail}&answer=${event.encryptUrl('no')}&eventId=${event.encryptUrl(event.id)}</div>
 								</div>
 							</div>
 						</td>

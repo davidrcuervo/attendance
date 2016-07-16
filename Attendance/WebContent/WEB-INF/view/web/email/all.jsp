@@ -9,7 +9,7 @@
 					<h3 class="text-center">${email.name}</h3>
 					<p>
 						<a href="${pageContext.request.contextPath}/email/${email.url}" class="btn btn-primary btn-block" role="button">Select</a>
-						<a href="${pageContext.request.contextPath}/email/delete/${email.url}" class="btn btn-default btn-block" role="button">Delete</a> 
+						<a href="${pageContext.request.contextPath}/email/delete/${email.url}?url=email" class="btn btn-default btn-block" role="button">Delete</a> 
 					</p>
 				</div>
 			</div>

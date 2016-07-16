@@ -14,14 +14,13 @@ import com.laetienda.attendance.utilities.Logger;
 import com.laetienda.attendance.entities.User;
 import com.laetienda.attendance.entities.Event;
 import com.laetienda.attendance.entities.Person;
-import com.laetienda.attendance.entities.Email;
 
 public class DB {
 	
 	private EntityManagerFactory emfactory;
     private Logger log;
     private HashMap<String, String> settings;
-    private User user;
+    //private User user;
     
     public DB(String persistenceUnitName) throws IOException{
     	log = new Logger();
@@ -91,7 +90,7 @@ public class DB {
     public HashMap<String, String> getSettings(){
     	return this.settings;
     }
-    
+    /*
     public void setUser(User user){
     	this.user = user;
     }
@@ -99,7 +98,7 @@ public class DB {
     public User getUser(){
     	return this.user;
     }
-    
+    */
     public User getUser(String username){
     	log.info("Getting user from username: $username: " + username);
     	User result = new User();
@@ -136,19 +135,19 @@ public class DB {
     	return result;	
     }
     
-    public Person findGuestByEncodedEmail(String encodedEmail){
-    	log.info("Finding person by encoded email");
+    public Person findGuestByEmail(String email){
+    	log.info("Finding person by email");
     	
     	Person result = null;
     	
     	try{
     		EntityManager em = getEntityManager();
-    		String email = URLDecoder.decode(encodedEmail, "UTF-8");
+    		
     		result = em.createNamedQuery("Person.findByEmail", Person.class).setParameter("email", email).getSingleResult();
     		em.clear();
     		em.close();
 		}catch (Exception ex){
-			log.notice("Exeption caught while finding person by url");
+			log.notice("Exeption caught while finding person by email");
 			log.exception(ex);
 		}finally{
 			
@@ -156,6 +155,19 @@ public class DB {
     	return result;
     }
     
+    public Person findGuestByEncodedEmail(String encodedEmail){
+    	log.info("Finding person by encoded email");
+    	String email = null;
+    	
+    	try{
+    		email = URLDecoder.decode(encodedEmail, "UTF-8");
+    	}catch (Exception ex){
+    		log.notice("Exeption caught while finding person by url");
+			log.exception(ex);
+    	}
+    	return findGuestByEmail(email);
+    }
+    /*
     public Email findEmailByEncodedName(String encodedEmailName){
     	log.info("Finding person by encoded email. $encodedEmailName: " + encodedEmailName);
     	
@@ -172,5 +184,5 @@ public class DB {
     		log.exception(ex);
     	}
     	return email;
-    }
+    }*/
 }

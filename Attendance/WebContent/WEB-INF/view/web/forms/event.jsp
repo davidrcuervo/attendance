@@ -73,9 +73,33 @@
 			</div>
 		</c:if>
 		
-		<input type="hidden" name="eventID" value="${event.id == null ? '0' : event.id }">
-		<button type="submit" name="submit" value="${submit_value == null ? 'edit' : submit_value}" class="btn btn-default btn-block">${button_library_form}</button>
-		<a href="${cancel_link == null ? pageContext.request.contextPath : cancel_link }" class="btn btn-danger btn-block">Cancel</a>
+		<div class="form-horizontal">
+			<div class="form-group">
+				<label for="event_email" class="col-xs-4 col-sm-2 control-label">eMail template:</label>
+				<div class="col-xs-8 col-sm-4">
+					<select class="form-control" name="email_template">
+						<option value="0" ${event.email.url == null ? 'selected' : ''}>Select one email template to send the invitations</option>
+						<c:forEach var="emailOption" items="${user.emails}">
+							<option value="${emailOption.id}" ${emailOption.url == event.email.url ? 'selected' : ''}>${emailOption.name}</option> 
+						</c:forEach>
+					</select>
+				</div>
+			</div>
+		</div>
+		<c:if test="${event.errors['email'] != null}">
+			<div class="text-danger text-center">
+				<c:forEach var="error" items="${event.errors['email']}">
+					<small>${error}</small><br />
+				</c:forEach>
+			</div>
+		</c:if>
+		
+		<div class="form-group">
+			
+			<input type="hidden" name="eventID" value="${event.id == null ? '0' : event.id }">
+			<button type="submit" name="submit" value="${submit_value == null ? 'edit' : submit_value}" class="btn btn-default btn-block">${button_library_form}</button>
+			<a href="${cancel_link == null ? pageContext.request.contextPath : cancel_link }" class="btn btn-danger btn-block">Cancel</a>
+		</div>
   		<c:if test="${event.errors['event'] != null}">
 			<div class="text-danger text-center">
 				<c:forEach var="error" items="${event.errors['event'] }">

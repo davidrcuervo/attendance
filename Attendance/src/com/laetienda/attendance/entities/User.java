@@ -163,6 +163,19 @@ public class User extends Father implements Serializable {
 		return event;
 	}
 	
+	public Event getEventByUrl(String url){
+		Event result = null;
+		
+		for(Event temp : getEvents()){
+			if(temp.getUrlEncodedName().equals(url)){
+				result = temp;
+				break;
+			}
+		}
+		
+		return result;
+	}
+	
 	public List<Email> getEmails() {
 		return this.emails;
 	}
@@ -177,11 +190,40 @@ public class User extends Father implements Serializable {
 
 		return email;
 	}
-
+	
 	public Email removeEmail(Email email) {
-		getEmails().remove(email);
-		email.setUser(null);
+		
+		if(getId() == email.getUser().getId()){
+			
+			for(Event evento : getEvents()){
+				
+				if(evento.getEmail().getId() == email.getId()){	
+					addError("email", "This email can't be delted because it is being used by any event");
+					break;
+				}
+			}
+		}else{
+			addError("email", "You don't have rights to delete this email.");
+		}
+		
+		if(getErrors().get("email") == null){
+			getEmails().remove(email);
+		}
 
 		return email;
+	}
+	
+	public Email getEmailByUrl(String url){
+		
+		Email result = null;
+		
+		for(Email temp : getEmails()){
+			if(temp.getUrl().equals(url)){
+				result = getEmails().get(getEmails().indexOf(temp));
+				break;
+			}
+		}
+			
+		return result;
 	}
 }

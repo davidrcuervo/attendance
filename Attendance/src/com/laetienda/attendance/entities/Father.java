@@ -3,8 +3,11 @@ package com.laetienda.attendance.entities;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 
 import com.laetienda.attendance.utilities.Logger;
@@ -96,6 +99,53 @@ public abstract class Father {
 	
 	public Calendar getAhora(){
 		return new GregorianCalendar();
+	}
+	
+	public String encryptUrl(String original){
+		String result = null;
+		try{
+			byte[] encrypted = Base64.getEncoder().encode(original.getBytes());
+			String temp = new String(encrypted);
+			result = URLEncoder.encode(temp, "UTF-8");
+		}catch(Exception ex){
+			log.error("Error while encrypting. $string: " + original);
+			log.exception(ex);
+		}
+		return result;
+	}
+	
+	public String encryptUrl(int original){
+		String temp = Integer.toString(original);
+		
+		return encryptUrl(temp);
+	}
+	
+	public int decryptUrlId(String urlEncrypted){
+		int result = 0;
+		try{
+			result = Integer.parseInt(decryptUrlString(urlEncrypted));
+		}catch(Exception ex){
+			log.error("Exception caught while decrypting. $string: " + urlEncrypted);
+			log.exception(ex);
+		}
+		
+		return result;
+	}
+	
+	public String decryptUrlString(String urlEncrypted){
+		
+		String result = null;
+		try{
+			String encrypted = URLDecoder.decode(urlEncrypted, "UTF-8");
+			
+			byte[] decoded = Base64.getDecoder().decode(encrypted);
+			result = new String(decoded);
+			
+		}catch(Exception ex){
+			log.error("Exception caught while decrypting. $string: " + urlEncrypted);
+			log.exception(ex);
+		}
+		return result;
 	}
 	
 	public abstract Integer getId();

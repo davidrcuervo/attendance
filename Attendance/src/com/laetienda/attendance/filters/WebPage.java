@@ -54,7 +54,6 @@ public class WebPage implements Filter {
 			String username = (String)httpReq.getRemoteUser();
 			User user = db.getUser(username);
 			user.setLogger(log);
-			db.setUser(user);
 			httpReq.setAttribute("user", user);
 		}
 		

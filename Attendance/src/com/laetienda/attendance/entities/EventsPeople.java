@@ -72,15 +72,15 @@ public class EventsPeople extends Father implements Serializable {
 
 	public void setStatus(String status) {
 				
-		if(!(status.equals("yes") || status.equals("no"))){
+		if(!(status.equals("yes") || status.equals("no") || status.equals("invited"))){
 			addError("confirmation", "Sorry, the provided answer doesn't make sense");
 		}
 		
-		if(getEvent().getConfirmationLimitDate().after(getAhora())){
+		if(getEvent().getConfirmationLimitDate().before(getAhora())){
 			addError("confirmation", "Sorry, it is too late to confirm your assistance.");
 		}
 		
-		if(getErrors().get("confirmation").size() <= 0){
+		if(getErrors().get("confirmation") == null){
 			this.status = status;
 		}
 	}

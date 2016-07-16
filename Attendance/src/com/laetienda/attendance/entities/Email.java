@@ -36,7 +36,8 @@ public class Email extends Father implements Serializable {
 	private String name;
 
 	//bi-directional many-to-one association to UserTest
-	@ManyToOne
+	@ManyToOne(fetch=FetchType.LAZY)
+	@JoinColumn(name="\"user_id\"")
 	private User user;
 
 	//bi-directional many-to-one association to EventTest
@@ -47,9 +48,20 @@ public class Email extends Father implements Serializable {
 	@OneToOne(cascade = CascadeType.PERSIST, orphanRemoval=true)
 	@JoinColumn(name="\"email\"")
 	private TextReference email;
+	
+	@Transient
+	private User editUser;
 
 	public Email() {
 		super();
+	}
+	
+	public void setEditUser(User user){
+		this.editUser = user;
+	}
+	
+	public User getEditUser(){
+		return this.editUser;
 	}
 	
 	public Email(Logger log){
@@ -79,6 +91,10 @@ public class Email extends Father implements Serializable {
 	public void setName(String name) {
 		this.name = name;
 		
+		if(getUser().equals(getEditUser())){
+			addError("email", "You don't have permisions to edit this email");
+		}
+		
 		if(name == null || name.isEmpty()){
 			addError("name", "The name of the email can't be empty");
 			
@@ -102,7 +118,7 @@ public class Email extends Father implements Serializable {
 				}
 			}
 		}
-	}
+	} 
 
 	public User getUser() {
 		return this.user;

@@ -11,6 +11,7 @@ import javax.persistence.EntityManager;
 
 import com.laetienda.attendance.utilities.Logger;
 import com.laetienda.attendance.utilities.DB;
+import com.laetienda.attendance.utilities.DbTransaction;
 import com.laetienda.attendance.entities.User;
 import com.laetienda.attendance.entities.Event;
 import com.laetienda.attendance.entities.Person;
@@ -98,7 +99,8 @@ public class Evento extends HttpServlet {
 	
 	private boolean findEventByUrl(String urlEncodedName, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
-		this.evento = db.findEventByUrl(urlEncodedName);
+		User user = (User)request.getAttribute("user");
+		this.evento = user.getEventByUrl(urlEncodedName);
 		
 		boolean result = false;
 		
@@ -108,30 +110,7 @@ public class Evento extends HttpServlet {
 		
 		return result;
 	}
-	/*
-	private boolean findGuestByEncodedEmail(String urlEncodedEmail, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
-		log.info("Finding guest by url. $urlEncodedEmail: " + urlEncodedEmail);
-		
-		boolean result = false;
-		Person person;
-		
-		try{
-			EntityManager em = db.getEntityManager();
-			String email = URLDecoder.decode(urlEncodedEmail, "UTF-8");
-			person = em.createNamedQuery("Person.findByEmail", Person.class).setParameter("email", email).getSingleResult();
-			request.setAttribute("person", person);
-			result = true;
-			em.clear();
-			em.close();
-			
-		}catch (Exception ex){
-			log.notice("event not find. $urlEncodedName: " + urlEncodedEmail);
-			log.exception(ex);
-		}
-		
-		return result;
-	}
-	*/
+	
 	private void addOrEdit(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		log.info("Adding or editing event");
 		
@@ -142,66 +121,33 @@ public class Evento extends HttpServlet {
 		String event_time = request.getParameter("event_time");
 		String unit_before = request.getParameter("unit_before");
 		String quantity_before = request.getParameter("quantity_before");
+		String email_template = request.getParameter("email_template");
 		
 		int eventID = Integer.parseInt(request.getParameter("eventID"));
+		int emailID = Integer.parseInt(email_template);
 		User temp = (User)request.getAttribute("user");
+			
+		DbTransaction trans = new DbTransaction(db, log);
+		User user = trans.getEm().find(User.class, temp.getId());
 		
-		try{
-			EntityManager em = db.getEntityManager();
-			em.getTransaction().begin();
-			
-			User user = em.find(User.class, temp.getId());
-			
-			if(submit.equals("add")){
-				evento = new Event(log);
-				evento.setUser(user);
-			}else{
-				evento = em.find(Event.class, eventID);
-			}
-			
-			evento.setName(name);
-			evento.setDescription(description);
-			evento.setDate(event_date, event_time);
-			evento.setConfirmationLimitDate(event_date, event_time, quantity_before, unit_before);
-			
-			if(evento.getErrors().size() <= 0){
-				try{
-					if(submit.equals("add")){
-						em.persist(evento);
-					}
-					
-					em.flush();
-					em.getTransaction().commit();
-					
-				}catch (Exception ex1){
-					evento.addError("event", "Internal error while processiong the event");
-					log.notice("Exception thrown while saving event in the database");
-					log.exception(ex1);
-					
-					try{
-						em.getTransaction().rollback();
-					}catch (Exception ex2){
-						log.error("Error while rolling back");
-						log.exception(ex2);
-					}
-				}finally{
-					em.clear();
-					em.close();
-				}
-			}
-			
-			if(evento.getErrors().size() > 0){
-				request.setAttribute("event", evento);
-				doGet(request, response);
-			}else{
-				response.sendRedirect(request.getContextPath() + "/event/" + evento.getUrlEncodedName());
-			}
-			
-		}catch(Exception ex){
-			log.error("Event failed when adding or editing");
-			log.exception(ex);
-			ex.printStackTrace();
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		if(submit.equals("add")){
+			evento = new Event(log);
+			user.addEvent(evento);
+		}else{
+			evento = trans.getEm().find(Event.class, eventID);
+		}
+		evento.setEditUser(user);
+		evento.setName(name);
+		evento.setDescription(description);
+		evento.setDate(event_date, event_time);
+		evento.setConfirmationLimitDate(event_date, event_time, quantity_before, unit_before);
+		evento.setEmail(emailID);
+		
+		if(evento.getErrors().size() <=0 && trans.commit()){
+			response.sendRedirect(request.getContextPath() + "/event/" + evento.getUrlEncodedName());
+		}else{
+			request.setAttribute("event", evento);
+			doGet(request, response);
 		}
 	}
 	
@@ -260,76 +206,45 @@ public class Evento extends HttpServlet {
 	private void addGuest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
 		log.info("Adding guest");
 		
-		Person person;
 		boolean newPersonFlag = false;
 		String name = request.getParameter("name");
 		String email = request.getParameter("email");
-		//String submit = request.getParameter("submit");
-		//log.debug("event_id: " + request.getParameter("event_id"));
 		int eventID = Integer.parseInt(request.getParameter("event_id"));
 		
 		if(findEventByUrl(pathParts[3], request, response) && this.evento.getId() == eventID){
 			
-			try{
-				EntityManager em = db.getEntityManager();
-				em.getTransaction().begin();
+			Person tempPerson = db.findGuestByEmail(email);
+			DbTransaction trans = new DbTransaction(db, log);
 				
-				Event event = em.find(Event.class, eventID);
-				event.setLogger(log);
-				
-				if(em.createNamedQuery("Person.findByEmail", Person.class).setParameter("email", email).getResultList().size() > 0){
-					person = em.createNamedQuery("Person.findByEmail", Person.class).setParameter("email", email).getSingleResult();
-					person.setLogger(log);
-					
-				}else{
-					person = new Person(log);
-					person.setEmail(email);
-					newPersonFlag = true;
-				}
-				
-				person.setName(name);
-				person.addEvent(event);						
-				
-				if(person.getErrors().size() <= 0){				
-					try{
-						if(newPersonFlag){
-							em.persist(person);
-						}
-						
-						em.flush();
-						em.getTransaction().commit();
-					}catch(Exception ex1){
-						person.addError("person", "An internal error has occured while adding the guest");
-						log.notice("Exception catched while persistin and commiting new guest.");
-						log.exception(ex1);
-						
-						try{
-							em.getTransaction().rollback();
-						}catch(Exception ex2){
-							log.error("Exception catched while rolling back adding new guest");
-							log.exception(ex2);
-						}
-						
-					}finally{
-						em.clear();
-						em.close();
-					}
-				}
-				
-				if(person.getErrors().size() > 0){
-					request.setAttribute("guest", person);
-					request.setAttribute("event", this.evento);
-					doGet(request, response);
-				}else{
-					response.sendRedirect(request.getContextPath() + "/event/" + event.getUrlEncodedName());
-				}
-				
-			}catch (Exception ex){
-				log.notice("Exception caught wehn adding a guest");
-				log.exception(ex);
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+			Event event = trans.getEm().find(Event.class, eventID);
+			Person person;
+			event.setLogger(log);
+			
+			if(tempPerson != null){
+				person = trans.getEm().find(Person.class, tempPerson.getId());
+				person.setLogger(log);
+			}else{
+				person = new Person(log);
+				person.setEmail(email);
+				newPersonFlag = true;
 			}
 			
+			person.setName(name);
+			person.addEvent(event);
+			
+			if(newPersonFlag){
+				trans.getEm().persist(person);
+			}
+			
+			if(person.getErrors().size() <= 0 && trans.commit()){				
+			
+				response.sendRedirect(request.getContextPath() + "/event/" + event.getUrlEncodedName());
+			}else{
+				
+				request.setAttribute("guest", person);
+				request.setAttribute("event", this.evento);
+				doGet(request, response);
+			}
 		} else {
 			log.error("event id from the form does not correspond to the id of the url");
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);

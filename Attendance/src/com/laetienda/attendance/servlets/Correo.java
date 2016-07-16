@@ -2,7 +2,6 @@ package com.laetienda.attendance.servlets;
 
 import java.io.IOException;
 
-import javax.persistence.EntityManager;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -11,6 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.laetienda.attendance.utilities.DB;
 import com.laetienda.attendance.utilities.Logger;
+import com.laetienda.attendance.utilities.DbTransaction;
 import com.laetienda.attendance.entities.Email;
 import com.laetienda.attendance.entities.User;
 
@@ -21,6 +21,7 @@ public class Correo extends HttpServlet {
 	private Logger log;
 	private DB db;
 	private Email email;
+	private User user;
 	
     public Correo() {
         super();
@@ -35,6 +36,7 @@ public class Correo extends HttpServlet {
 		log.info("processiong get from correo(email) servlet");
 		
 		pathParts = (String[])request.getAttribute("pathParts");
+		user = (User)request.getAttribute("user");
 		
 		// /email
 		if(pathParts.length == 2){
@@ -45,21 +47,22 @@ public class Correo extends HttpServlet {
 			request.getRequestDispatcher(db.getSettings().get("jsp_folder") + "email/add.jsp").forward(request, response);
 		
 		// /email/:urlEncodedEmailName
-		}else if(pathParts.length == 3 && db.findEmailByEncodedName(pathParts[2]) != null){
-			request.setAttribute("email", db.findEmailByEncodedName(pathParts[2]));
+		}else if(pathParts.length == 3 && user.getEmailByUrl(pathParts[2]) != null){
+			
+			request.setAttribute("email", user.getEmailByUrl(pathParts[2]));
 			request.getRequestDispatcher(db.getSettings().get("jsp_folder") + "email/show.jsp").forward(request, response);
 			
 		// /email/edit/:urlEncodedEmailName	
-		}else if(pathParts.length == 4 && pathParts[2].equals("edit") && db.findEmailByEncodedName(pathParts[3]) != null){
+		}else if(pathParts.length == 4 && pathParts[2].equals("edit") && user.getEmailByUrl(pathParts[3]) != null){
 			if(email == null){
-				email = db.findEmailByEncodedName(pathParts[3]);
+				email = user.getEmailByUrl(pathParts[3]);
 			}
-			request.setAttribute("email", pathParts[3]);
+			request.setAttribute("email", email);
 			request.getRequestDispatcher(db.getSettings().get("jsp_folder") + "email/edit.jsp").forward(request, response);
 			
 		// /email/delete/:urlEcodedEmailName
-		}else if(pathParts.length == 4 && pathParts[2].equals("delete") && db.findEmailByEncodedName(pathParts[3]) != null){
-			
+		}else if(pathParts.length == 4 && pathParts[2].equals("delete") && user.getEmailByUrl(pathParts[3]) != null){
+			delete(pathParts[3], request, response);
 		}
 		else{
 			response.getWriter().append("Served at: ").append(request.getContextPath()).append("\n")
@@ -83,60 +86,48 @@ public class Correo extends HttpServlet {
 		String name = request.getParameter("name");
 		String emailContent = request.getParameter("content");
 		String emailID = request.getParameter("emailID");
+		User tempUser = (User)request.getAttribute("user");
 		
-		try{
-			EntityManager em = db.getEntityManager();
-			em.getTransaction().begin();
+		DbTransaction trans = new DbTransaction(db, log);
+		
+		if(submit.equals("addEmail")){
+			email = new Email(log);
+			User user = trans.getEm().find(User.class, tempUser.getId());
+			user.addEmail(email);
+		}else{
+			email = trans.getEm().find(Email.class, Integer.parseInt(emailID));
+		}
+		
+		email.setEditUser(tempUser);
+		email.setName(name);
+		email.setEmail(emailContent);
 			
-			if(submit.equals("addEmail")){
-				email = new Email(log);
-				email.setUser((User)request.getAttribute("user"));
-			}else{
-				email = em.find(Email.class, Integer.parseInt(emailID));
-			}
+		if(email.getErrors().size() <= 0 && trans.commit()){
+			response.sendRedirect(request.getContextPath() + "/email/" + email.getUrlEncodedName());
+		}else{
+			request.setAttribute("email", email);
+			doGet(request, response);
+		}
+	}
+
+	private void delete(String urlEncodedEmailName, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
+		log.info("Deleting email. $urlEncodedEmailName: " + urlEncodedEmailName);
+		
+		User tempUser = (User)request.getAttribute("user");
+		String tempUrl = request.getParameter("url");
+		
+		DbTransaction tran = new DbTransaction(db, log);
+		
+		User user = tran.getEm().find(User.class, tempUser.getId());
+		Email email = tran.getEm().find(Email.class, user.getEmailByUrl(urlEncodedEmailName).getId());
+		
+		user.removeEmail(email);
+		
+		if(user.getErrors().size() <= 0 && tran.commit()){	
+			response.sendRedirect(request.getContextPath() + "/" + tempUrl);
+		}else{
 			
-			email.setName(name);
-			email.setEmail(emailContent);
-			
-			if(email.getErrors().size() <= 0){
-				
-				try{
-					if(submit.equals("addEmail")){
-						em.persist(email);
-					}
-					
-					em.flush();
-					em.getTransaction().commit();
-					
-				}catch(Exception ex1){
-					email.addError("email", "An internal error occurred while saving the Email");
-					log.notice("Exception caught while comminting email");
-					log.exception(ex1);
-					
-					try{
-						em.getTransaction().rollback();
-					}catch(Exception ex2){
-						log.error("Exception caught while rolling back email trasaction");
-						log.exception(ex2);
-					}
-					
-				}finally{
-					em.clear();
-					em.close();
-				}
-			}
-			
-			if(email.getErrors().size() > 0){
-				request.setAttribute("email", email);
-				doGet(request, response);
-			}else{
-				response.sendRedirect(request.getContextPath() + "/email/" + email.getUrlEncodedName());
-			}
-			
-		}catch(Exception ex){
-			log.notice("Exception caught while adding or editing an email");
-			log.exception(ex);
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+			request.getRequestDispatcher(db.getSettings().get("jsp_folder") + "email/edit.jsp").forward(request, response);
 		}
 	}
 }

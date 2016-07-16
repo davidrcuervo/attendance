@@ -1,7 +1,6 @@
 package com.laetienda.attendance.servlets;
 
 import java.io.IOException;
-import java.util.Base64;
 
 import javax.persistence.EntityManager;
 import javax.servlet.ServletConfig;
@@ -56,17 +55,20 @@ public class Confirmation extends HttpServlet {
 		
 		String encodedEmailGuest = request.getParameter("guest");
 		String encryptedAnswer = request.getParameter("answer");
+		String urlEncryptedEventId = request.getParameter("eventId");
+		
 		
 		Person person = db.findGuestByEncodedEmail(encodedEmailGuest);
-		Event evento = db.findEventByUrl(eventEncodedUrlName);
+		int eventID = person.decryptUrlId(urlEncryptedEventId);
+		String answer = person.decryptUrlString(encryptedAnswer);
 
 		try{
-			byte[] decoded = Base64.getDecoder().decode(encryptedAnswer);
-			String answer = new String(decoded);
+			
 							
 			EntityManager em = db.getEntityManager();
 			em.getTransaction().begin();
 			
+			Event evento = em.find(Event.class, eventID);
 			EventsPeople ep = em.createNamedQuery("EventsPeople.findByUserAndEvent", EventsPeople.class).setParameter("person", person).setParameter("event", evento).getSingleResult();
 			ep.setStatus(answer);
 			

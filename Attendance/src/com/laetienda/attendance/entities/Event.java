@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Base64;
 
 import javax.persistence.*;
 
@@ -54,7 +53,7 @@ public class Event extends Father implements Serializable {
 	private TextReference description;
 	
 	//bi-directional many-to-one association to EventsPeople
-	@OneToMany(mappedBy="event")
+	@OneToMany(mappedBy="event", cascade = CascadeType.PERSIST)
 	private List<EventsPeople> guests;
 	
 	@ManyToOne(fetch=FetchType.LAZY)
@@ -76,6 +75,9 @@ public class Event extends Father implements Serializable {
 	
 	@Transient
 	private Calendar ahora;
+	
+	@Transient
+	private User editUser;
 
 	public Event() {
 		super();
@@ -91,10 +93,14 @@ public class Event extends Father implements Serializable {
 		return this.id;
 	}
 
-	public void setId(Integer id) {
-		this.id = id;
+	public void setEditUser(User user){
+		this.editUser = user;
 	}
-
+	
+	public User getEditUser(){
+		return this.editUser;
+	}
+	
 	public Calendar getConfirmationLimitDate() {
 		return this.confirmationLimitDate;
 	}
@@ -199,6 +205,10 @@ public class Event extends Father implements Serializable {
 		
 		String temp;
 		
+		if(!(getUser().getId() == getEditUser().getId())){
+			addError("event", "You can't edit this event");
+		}
+		
 		if(name == null || name.isEmpty()){
 			
 			addError("name", "The name of the event can't be empty");
@@ -290,15 +300,6 @@ public class Event extends Father implements Serializable {
 		return guest;
 	}
 	
-	public String encrypt(String original){
-		String result = null;
-		
-		byte[] encrypted = Base64.getEncoder().encode(original.getBytes());
-		result = new String(encrypted);
-		
-		return result;
-	}
-	
 	public Calendar getDateObject(){
 		return this.date;
 	}
@@ -309,5 +310,26 @@ public class Event extends Father implements Serializable {
 	
 	public void setEmail(Email email) {
 		this.email = email;
+	}
+	
+	public void setEmail(int emailId){
+		
+		int c;
+		
+		if(emailId > 0){
+			for(c=0; c < getUser().getEmails().size(); c++){
+				if(getUser().getEmails().get(c).getId()== emailId){
+					setEmail(getUser().getEmails().get(c));
+					break;
+				}
+			}
+			
+			if(c >= getUser().getEmails().size()){
+				addError("email", "Select a valid eMail");
+			}
+			
+		} else{
+			addError("email", "Select a valid eMail");
+		}
 	}
 }

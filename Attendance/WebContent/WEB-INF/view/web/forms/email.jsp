@@ -26,8 +26,15 @@
 			</c:if>
 		</div>
 		
-		<input type="hidden" name="emailID" value="${email.id == null ? '0' : event.id }">
+		<input type="hidden" name="emailID" value="${email.id == null ? '0' : email.id }">
 		<button type="submit" name="submit" value="${submit_value == null ? 'edit' : submit_value}" class="btn btn-default btn-block">${button_email_form}</button>
 		<a href="${cancel_link == null ? pageContext.request.contextPath : cancel_link}" class="btn btn-danger btn-block">Cancel</a>
+		<c:if test="${email.errors['email'] != null}">
+			<div class="text-danger text-center">
+				<c:forEach var="error" items="${email.errors['email'] }">
+					<small>${error}</small><br />
+				</c:forEach>
+			</div>
+		</c:if>
 	</form>
 </c:set>
