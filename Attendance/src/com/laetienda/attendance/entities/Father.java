@@ -148,6 +148,34 @@ public abstract class Father {
 		return result;
 	}
 	
+	public String encrypt(String word){
+		String result = null;
+		
+		try{
+			byte[] encrypted = Base64.getEncoder().encode(word.getBytes());
+			result = new String(encrypted);
+		}catch (Exception ex){
+			log.notice("Exception caught while encrypting a word. $word: " + word);
+			log.exception(ex);
+		}
+		
+		return result;
+	}
+	
+	public String decrypt(String word){
+		String result = null;
+		
+		try{
+			byte[] decoded = Base64.getDecoder().decode(word);
+			result = new String(decoded);
+		}catch (Exception ex){
+			log.notice("Exception caught while decrypting a word. $word: " + word);
+			log.exception(ex);
+		}
+		
+		return result;
+	}
+	
 	public abstract Integer getId();
 
 }

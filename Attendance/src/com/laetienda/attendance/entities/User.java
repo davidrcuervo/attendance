@@ -5,6 +5,7 @@ import javax.persistence.*;
 import java.util.Date;
 import java.util.List;
 import com.laetienda.attendance.utilities.Logger;
+import com.laetienda.attendance.utilities.Mailer;
 
 
 @Entity
@@ -49,6 +50,18 @@ public class User extends Father implements Serializable {
 	
 	@OneToMany(mappedBy="user", cascade=CascadeType.ALL, orphanRemoval=true)
 	private List<Email> emails;
+	
+	@Column(name="\"email_server\"", nullable = true)
+	private String emailServer;
+	
+	@Column(name="\"email_user\"", nullable = true)
+	private String emailUser;
+	
+	@Column(name="\"email_password\"", nullable = true)
+	private String emailPassword;
+	
+	@Column(name="\"email_port\"", nullable = true)
+	private int emailPort; 
 
 	public User(){
 	}
@@ -225,5 +238,65 @@ public class User extends Father implements Serializable {
 		}
 			
 		return result;
+	}
+	
+	public boolean setEmailConnection(String server, String username, String password, String port){
+		boolean result = false;
+		
+		Mailer test = new Mailer(log);
+		
+		setEmailServer(server);
+		setEmailUser(username);
+		setEmailPassword(password);
+		setEmailPort(port);
+		
+		test.setSettings(server, getEmailPort(), username, password);
+		
+		if(!test.testConnection()){
+			addError("email server", "Email settings are wrong");
+		}
+		
+		return result;
+	}
+	
+	private void setEmailServer(String server){
+		this.emailServer = server;
+	}
+	
+	public String getEmailServer(){
+		return this.emailServer;
+	}
+	
+	private void setEmailUser(String username){
+		this.emailUser = username;
+	}
+	
+	public String getEmailUser(){
+		return this.emailUser;
+	}
+	
+	private void setEmailPassword(String password){
+		this.emailPassword = encrypt(password);
+	}
+	
+	public String getEmailPassword(){
+		return decrypt(emailPassword);
+	}
+	
+	private void setEmailPort(String port){
+		try{
+			int temp = Integer.parseInt(port);
+			setEmailPort(temp);
+		}catch (Exception ex){
+			setEmailPort(0);
+		}
+	}
+	
+	private void setEmailPort(int port){
+		this.emailPort = port;
+	}
+	
+	public int getEmailPort(){
+		return this.emailPort;
 	}
 }

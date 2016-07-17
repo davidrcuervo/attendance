@@ -19,6 +19,7 @@
     <url-pattern>/home</url-pattern>
     <url-pattern>/logout</url-pattern>
     <url-pattern>/password</url-pattern>
+    <url-pattern>/email_server</url-pattern>
   </servlet-mapping>
   <servlet>
     <servlet-name>event</servlet-name>

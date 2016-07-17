@@ -62,7 +62,7 @@
 	          <ul class="dropdown-menu">
 	            <li><a href="#">Action</a></li>
 	            <li role="separator" class="divider"></li>
-	            <li><a href="${pageContext.request.contextPath}/password">Change Password</a></li>
+	            <li><a href="${pageContext.request.contextPath}/email_server"><span class="glyphicon glyphicon-envelope"></span>&nbsp&nbspeMail Server</a></li>
 	            <li><a href="${pageContext.request.contextPath}/logout"><span class="glyphicon glyphicon-log-out"></span>&nbsp&nbspLog Out</a></li>
 	          </ul>
 	        </li>

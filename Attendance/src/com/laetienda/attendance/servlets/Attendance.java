@@ -9,7 +9,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.laetienda.attendance.entities.User;
 import com.laetienda.attendance.utilities.DB;
+import com.laetienda.attendance.utilities.DbTransaction;
 import com.laetienda.attendance.utilities.Logger;
+import com.sun.corba.se.impl.protocol.giopmsgheaders.RequestMessage;
+import com.laetienda.attendance.utilities.DbTransaction;
 
 public class Attendance extends HttpServlet {
 	private static final long serialVersionUID = 1L;
@@ -31,7 +34,7 @@ public class Attendance extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
-		user = (User)request.getServletContext().getAttribute("user");
+		//user = (User)request.getServletContext().getAttribute("user");
 		pathParts = (String[])request.getAttribute("pathParts");
 		
 		// root
@@ -49,6 +52,10 @@ public class Attendance extends HttpServlet {
 		// /password	
 		} else if(pathParts[1].equals("password") && pathParts.length == 2){
 			request.getRequestDispatcher(db.getSettings().get("jsp_folder") + "password.jsp").forward(request, response);
+		
+		// /email_server
+		} else if(pathParts.length == 2 && pathParts[1].equals("email_server")){
+			request.getRequestDispatcher(db.getSettings().get("jsp_folder") + "email/server.jsp").forward(request, response);
 		}
 		else{
 			log.info("Visitor has requested and invalid URL. url: " + request.getRequestURI());
@@ -57,8 +64,14 @@ public class Attendance extends HttpServlet {
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
+		log.info("Processing form from email servlet");
+		
+		// email server settings
+		if(request.getParameter("submit").equals("email_server")){
+			emailServer(request, response);
+		}else{
+			doGet(request, response);
+		}
 	}
 	
 	private void logout(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -70,6 +83,35 @@ public class Attendance extends HttpServlet {
 			log.info(ex.getMessage());
 		}finally{
 			response.sendRedirect(response.encodeRedirectURL(request.getContextPath() + "/home"));
+		}
+	}
+	
+	private void emailServer(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		log.info("Saving email server settings");
+		
+		String server = request.getParameter("server");
+		String username = request.getParameter("username");
+		String port = request.getParameter("port");
+		String password = request.getParameter("password");
+		user = (User)request.getAttribute("user");
+		request.removeAttribute("user");
+		
+		DbTransaction trans = new DbTransaction(db, log);
+		
+		user = trans.getEm().find(User.class, user.getId());
+		user.setEmailConnection(server, username, password, port);
+		
+		request.setAttribute("user", user);
+		if(user.getErrors().size() <= 0){
+			if(trans.commit()){
+				response.sendRedirect(request.getContextPath());
+			}else{
+				user.addError("user email", "Internal error ocurred while saving email server settings");
+				doGet(request, response);
+			}
+		}else{
+			trans.close();
+			doGet(request,response);
 		}
 	}
 }
