@@ -31,6 +31,7 @@ public class TextReference extends Father implements Serializable {
 
 	//bi-directional many-to-one association to Text
 	@OneToMany(mappedBy="textReference", cascade = CascadeType.PERSIST, orphanRemoval=true)
+	@OrderBy("id ASC")
 	private List<Text> texts;
 
 	public TextReference() {

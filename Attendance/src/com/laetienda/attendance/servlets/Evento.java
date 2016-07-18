@@ -14,7 +14,9 @@ import com.laetienda.attendance.utilities.DB;
 import com.laetienda.attendance.utilities.DbTransaction;
 import com.laetienda.attendance.entities.User;
 import com.laetienda.attendance.entities.Event;
+import com.laetienda.attendance.entities.EventsPeople;
 import com.laetienda.attendance.entities.Person;
+import com.laetienda.attendance.beans.Attendance;
 
 public class Evento extends HttpServlet {
 	private static final long serialVersionUID = 1L;
@@ -74,7 +76,6 @@ public class Evento extends HttpServlet {
 			request.setAttribute("event", this.evento);
 			request.setAttribute("person", db.findGuestByEncodedEmail(pathParts[4]));
 			request.getRequestDispatcher(db.getSettings().get("jsp_folder") + "event/show.jsp").forward(request, response);
-
 		}
 		else{
 			response.getWriter().append("Served at: ").append(request.getContextPath());
@@ -91,6 +92,10 @@ public class Evento extends HttpServlet {
 		// addGuest or editGues
 		} else if(request.getParameter("submit").equals("addGuest")){
 			addGuest(request, response);
+		
+		// send email invitation
+		} else if(request.getParameter("submit").equals("send_email_invitation")){
+			sendEmail(request, response);
 		}
 		else{
 			doGet(request, response);
@@ -248,6 +253,42 @@ public class Evento extends HttpServlet {
 		} else {
 			log.error("event id from the form does not correspond to the id of the url");
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+	}
+
+	private void sendEmail(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
+		log.info("Sending invitation by email");
+		
+		Attendance app = (Attendance)request.getAttribute("app");
+		User user = (User)request.getAttribute("user");
+		String stringGuestId = request.getParameter("guestId");
+		int guestId = Integer.parseInt(stringGuestId); 
+		
+		DbTransaction trans = new DbTransaction(db, log);
+		EventsPeople ep = trans.getEm().find(EventsPeople.class, guestId);
+		evento = ep.getEvent();
+		//Person person = ep.getPerson();
+		
+		if(ep.getEvent().getUser().getId() == user.getId()){
+			ep.setAppUrl(app.getUrl());
+			ep.setStatus("invite_sent");
+		}else{
+			ep.addError("send email", "You don't have priviledges to send this email.");
+		}
+		
+		request.setAttribute("event", evento);
+		request.setAttribute("event_people", ep);
+		
+		if(ep.getErrors().size() <= 0){
+			if(trans.commit()){
+				response.sendRedirect(request.getRequestURI());
+			}else{
+				ep.addError("send email", "Internal error has occured while saving changes");
+				doGet(request, response);
+			}
+		}else{
+			trans.close();
+			doGet(request, response);
 		}
 	}
 }

@@ -166,6 +166,20 @@ public class Email extends Father implements Serializable {
 		return this.email.getText();
 	}
 	
+	public String getFormatedEmail(EventsPeople ep){
+		String result = new String();
+		
+		result = getEmail().replaceAll("\\$\\{personName\\}", ep.getPerson().getName())
+				.replaceAll("\\$\\{eventName\\}", ep.getEvent().getName())
+				.replaceAll("\\$\\{eventConfirmDate\\}", ep.getEvent().dateToString(ep.getEvent().getConfirmationLimitDate()))
+				.replaceAll("\\$\\{eventDate\\}", ep.getEvent().getDate())
+				.replaceAll("\\$\\{eventTime\\}", ep.timeToString(ep.getEvent().getDateObject()))
+				.replaceAll("\\$\\{yesLink\\}", ep.getAppUrl() + "/confirm/event/" + ep.getEvent().getUrlEncodedName() + "?guest=" + ep.getPerson().getUrlEncodedEmail() + "&answer=" + ep.getEvent().encryptUrl("yes") + "&eventId=" + ep.getEvent().encryptUrl(ep.getEvent().getId()))
+				.replaceAll("\\$\\{noLink\\}", ep.getAppUrl() + "/confirm/event/" + ep.getEvent().getUrlEncodedName() + "?guest=" + ep.getPerson().getUrlEncodedEmail() + "&answer=" + ep.getEvent().encryptUrl("no") + "&eventId=" + ep.getEvent().encryptUrl(ep.getEvent().getId()));
+			
+		return result;
+	}
+	
 	public String getUrlEncodedName(){
 		
 		String result = null;

@@ -4,6 +4,7 @@ import java.io.Serializable;
 import javax.persistence.*;
 import java.util.Date;
 import com.laetienda.attendance.utilities.Logger;
+import com.laetienda.attendance.utilities.Mailer;
 
 
 @Entity
@@ -41,6 +42,9 @@ public class EventsPeople extends Father implements Serializable {
 	@ManyToOne
 	@JoinColumn(name="\"people_id\"")
 	private Person person;
+	
+	@Transient
+	private String appUrl;
 
 	public EventsPeople() {
 		super();
@@ -72,17 +76,34 @@ public class EventsPeople extends Father implements Serializable {
 
 	public void setStatus(String status) {
 				
-		if(!(status.equals("yes") || status.equals("no") || status.equals("invited"))){
+		if(!(status.equals("yes") || status.equals("no") || status.equals("invited") || status.equals("invite_sent"))){
 			addError("confirmation", "Sorry, the provided answer doesn't make sense");
 		}
 		
 		if(getEvent().getConfirmationLimitDate().before(getAhora())){
-			addError("confirmation", "Sorry, it is too late to confirm your assistance.");
+			addError("confirmation", "Sorry, The confirmation limit date has expired.");
 		}
 		
 		if(getErrors().get("confirmation") == null){
-			this.status = status;
+			if(status.equals("invite_sent")){
+				if(sendInvitation()){
+					this.status = status;
+				}else{
+					addError("send email", "Email has not been sent");
+				}
+			}else{
+				this.status = status;
+			}
 		}
+	}
+	
+	private boolean sendInvitation(){
+				
+		Mailer invitation = new Mailer(getEvent().getUser(), log);
+		invitation.setContent(getEvent().getEmail().getFormatedEmail(this));
+		invitation.setTo(getPerson().getEmail());
+		
+		return invitation.send();
 	}
 
 	public Event getEvent() {
@@ -103,6 +124,15 @@ public class EventsPeople extends Father implements Serializable {
 	public void setPerson(Person person) {
 		this.person = person;
 	}
+	
+	public void setAppUrl(String appUrl){
+		this.appUrl = appUrl;
+	}
+	
+	public String getAppUrl(){
+		return this.appUrl;
+	}
+	
 	
 	public boolean getIsAttending(){
 		boolean result = false;
