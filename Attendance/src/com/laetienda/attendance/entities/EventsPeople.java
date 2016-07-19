@@ -100,6 +100,7 @@ public class EventsPeople extends Father implements Serializable {
 	private boolean sendInvitation(){
 				
 		Mailer invitation = new Mailer(getEvent().getUser(), log);
+		invitation.setSubject(getEvent().getEmail().getFormatedSubject(this));
 		invitation.setContent(getEvent().getEmail().getFormatedEmail(this));
 		invitation.setTo(getPerson().getEmail());
 		

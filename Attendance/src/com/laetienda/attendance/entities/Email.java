@@ -49,6 +49,10 @@ public class Email extends Father implements Serializable {
 	@JoinColumn(name="\"email\"")
 	private TextReference email;
 	
+	@OneToOne(cascade = CascadeType.PERSIST, orphanRemoval=true)
+	@JoinColumn(name="\"subject\"")
+	private TextReference subject;
+	
 	@Transient
 	private User editUser;
 
@@ -166,10 +170,39 @@ public class Email extends Father implements Serializable {
 		return this.email.getText();
 	}
 	
+	public void setSubject(String subject) {
+		
+		if(this.subject  == null){
+			this.subject = new TextReference();
+		}
+		
+		if(subject == null || subject.isEmpty()){
+			addError("subject", "Subject can't be empty");
+		}else{	
+			this.subject.setText(subject);
+			
+			if(subject.length() > 64){
+				addError("subject", "Subject can't have more than 64 letters");
+			}
+		}
+	}
+	
+	public String getSubject(){
+		return this.subject.getText();
+	}
+	
+	public String getFormatedSubject(EventsPeople ep){
+		return getFormatedContent(getSubject(), ep);
+	}
+	
 	public String getFormatedEmail(EventsPeople ep){
+		return getFormatedContent(getEmail(), ep);
+	}
+	
+	public String getFormatedContent(String content, EventsPeople ep){
 		String result = new String();
 		
-		result = getEmail().replaceAll("\\$\\{personName\\}", ep.getPerson().getName())
+		result = content.replaceAll("\\$\\{personName\\}", ep.getPerson().getName())
 				.replaceAll("\\$\\{eventName\\}", ep.getEvent().getName())
 				.replaceAll("\\$\\{eventConfirmDate\\}", ep.getEvent().dateToString(ep.getEvent().getConfirmationLimitDate()))
 				.replaceAll("\\$\\{eventDate\\}", ep.getEvent().getDate())

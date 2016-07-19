@@ -15,6 +15,18 @@
 		</div>
 		
 		<div class="form-group">
+			<label for="email_subject">Subject:</label>
+			<input type="text" class="form-control" id="email_subject" name="subject" placeholder="Type a subject for the email" value="${email.subject}">
+			<c:if test="${email.errors['subject'] != null}">
+				<div class="text-danger text-center">
+					<c:forEach var="error" items="${email.errors['subject'] }">
+						<small>${error}</small><br />
+					</c:forEach>
+				</div>
+			</c:if>
+		</div>
+		
+		<div class="form-group">
 			<label for="email_contet">Content:</label>
 			<textarea class="form-control" id="email_content" name="content" placeholder="Email in html" rows="15">${email.email}</textarea>
 			<c:if test="${email.errors['content'] != null}">

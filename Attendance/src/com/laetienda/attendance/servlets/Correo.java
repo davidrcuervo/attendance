@@ -85,6 +85,7 @@ public class Correo extends HttpServlet {
 		String submit = request.getParameter("submit");
 		String name = request.getParameter("name");
 		String emailContent = request.getParameter("content");
+		String emailSubject = request.getParameter("subject");
 		String emailID = request.getParameter("emailID");
 		User tempUser = (User)request.getAttribute("user");
 		
@@ -100,6 +101,7 @@ public class Correo extends HttpServlet {
 		
 		email.setEditUser(tempUser);
 		email.setName(name);
+		email.setSubject(emailSubject);
 		email.setEmail(emailContent);
 			
 		if(email.getErrors().size() <= 0 && trans.commit()){
