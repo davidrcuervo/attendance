@@ -25,7 +25,8 @@ public class Attendance {
 	private String buildUrl(){
 		
 		int port = request.getServerPort();
-		url = request.getScheme() + "://" + request.getServerName();
+		url = request.getHeader("X-Forwarded-Proto") + "://" + request.getServerName();
+		//url = request.getScheme() + "://" + request.getServerName();
 		
 		if(!(port == 80 || port == 443)){
 			url += ":" + Integer.toString(port);

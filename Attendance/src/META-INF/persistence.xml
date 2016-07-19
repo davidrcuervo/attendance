@@ -13,7 +13,7 @@
 		<class>com.laetienda.attendance.entities.Person</class>
 		<class>com.laetienda.attendance.entities.Email</class>
 	<properties>
-			<property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/dev_attendance"/>
+			<property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/attendance"/>
 			<property name="javax.persistence.jdbc.user" value="attendance"/>
 			<property name="javax.persistence.jdbc.password" value="Welcome1"/>
 			<property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>
