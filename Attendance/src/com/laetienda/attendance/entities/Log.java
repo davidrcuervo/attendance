@@ -34,7 +34,8 @@ public class Log extends Father implements Serializable {
 	private String method;
 
 	//bi-directional many-to-one association to User
-	@ManyToOne
+	@ManyToOne(fetch=FetchType.LAZY)
+	@JoinColumn(name="\"use_id\"")
 	private User user;
 
 	public Log() {
